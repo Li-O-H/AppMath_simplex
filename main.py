@@ -1,5 +1,7 @@
 import math
 
+import numpy
+
 
 class SimplexMethod:
 
@@ -87,8 +89,7 @@ class SimplexMethod:
                         check_row[j] = 0
         self.table.append(check_row)
         print(f"Start table")
-        for row in self.table:
-            print(row)
+        print(numpy.array(self.table))
         print("___________")
         return self.table
 
@@ -126,9 +127,7 @@ class SimplexMethod:
             self.pivot(pivot_row, pivot_column)
             self.basic_vars[pivot_row] = pivot_column - 1
             print(f"Iteration: {iteration}")
-            for row in self.table:
-                print(row)
-            print("___________")
+            print(numpy.array(self.table))
             iteration += 1
 
     # Преобразование таблицы при переходе к следующему плану
@@ -158,8 +157,7 @@ class SimplexMethod:
             for j in range(len(self.table[-2])):
                 self.table[-2][j] *= -1
         print("Final table:")
-        for row in self.table:
-            print(row)
+        print(numpy.array(self.table))
         for i in range(len(self.basic_vars)):
             print(f"x{self.basic_vars[i] + 1} = {self.table[i][0]}")
         for i in range(self.n):
