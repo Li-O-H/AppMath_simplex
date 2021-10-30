@@ -124,6 +124,10 @@ class SimplexMethod:
                         min_theta = theta
                         pivot_row = i
                 i += 1
+            # Проверка на неограниченность
+            if min_theta == math.inf:
+                print("Unbounded")
+                return
             self.pivot(pivot_row, pivot_column)
             self.basic_vars[pivot_row] = pivot_column - 1
             print(f"Iteration: {iteration}")
