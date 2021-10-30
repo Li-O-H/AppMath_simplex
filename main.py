@@ -159,11 +159,11 @@ class SimplexMethod:
         print("Final table:")
         print(numpy.array(self.table))
         for i in range(len(self.basic_vars)):
-            print(f"x{self.basic_vars[i] + 1} = {self.table[i][0]}")
+            print(f"x{self.basic_vars[i] + 1} = {round(self.table[i][0], 4)}")
         for i in range(self.n):
             if not self.basic_vars.__contains__(i):
                 print(f"x{i + 1} = 0")
-        print(f"Function extremum: {self.table[-2][0]}")
+        print(f"Function extremum: {round(self.table[-2][0], 4)}")
 
 
 s = SimplexMethod('1 task.txt')
