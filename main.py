@@ -3,6 +3,7 @@ import math
 
 class SimplexMethod:
 
+    # Сохраняет данные из файла, разбирая выражения на части
     def __init__(self, filename):
         file = open(filename, "r")
         self.mode = file.readline().strip()
@@ -34,7 +35,9 @@ class SimplexMethod:
         self.do_iterations()
         self.print_result()
 
+    # Формирует стартовый план
     def form_start_table(self):
+        # Добавляем искусственные переменные
         for i in range(self.m):
             if self.constraints_signs[i] == 0:
                 for j in range(self.m):
@@ -49,15 +52,17 @@ class SimplexMethod:
                     for j in range(self.m):
                         self.constraints_coefs[j].append(0)
                     self.constraints_coefs[i][-1] = 1
+        # Формируем строки таблицы, запоминая базисные переменные
         for i in range(self.m):
             for j in range(self.n, len(self.constraints_coefs[i])):
                 if self.constraints_coefs[i][j] != 0:
-                    row = [self.constraints_limits[i] * self.constraints_coefs[i][j]]
+                    row = [self.constraints_limits[i] / self.constraints_coefs[i][j]]
                     for l in range(len(self.constraints_coefs[i])):
                         row.append(self.constraints_coefs[i][l] / self.constraints_coefs[i][j])
                     self.table.append(row)
                     self.basic_vars[i] = j
         self.table.append([0])
+        # Дописываем исходные коэффициенты функции
         if self.mode == "min":
             for coef in self.f_coefs:
                 self.table[-1].append(-coef)
@@ -66,6 +71,7 @@ class SimplexMethod:
                 self.table[-1].append(coef)
         while len(self.table[-1]) != len(self.table[0]):
             self.table[-1].append(0)
+        # Дописываем коэффициенты функции с искусственными переменными
         check_row = [0 for j in range(len(self.table[0]))]
         if self.mode == "min":
             for i in range(len(self.table) - 1):
@@ -86,16 +92,19 @@ class SimplexMethod:
         print("___________")
         return self.table
 
+    # Итеративно оптимизирует план
     def do_iterations(self):
         iteration = 1
         while True:
             max = 0.0
             pivot_column = 0
             j = 1
+            # Поиск ведущего столбца
             for j in range(1, self.n + 1):
                 if self.table[-1][j] > max:
                     max = self.table[-1][j]
                     pivot_column = j
+            # Проверка на оптимальность плана
             if abs(max) < 1e-10:
                 for j in range(1, self.n + 1):
                     if self.table[-2][j] > max:
@@ -103,6 +112,7 @@ class SimplexMethod:
                         pivot_column = j
                 if abs(max) < 1e-10:
                     return self.table
+            # Поиск ведущей строки
             pivot_row = 0
             i = 0
             min_theta = math.inf
@@ -121,12 +131,16 @@ class SimplexMethod:
             print("___________")
             iteration += 1
 
+    # Преобразование таблицы при переходе к следующему плану
     def pivot(self, row, column):
         j = 0
+        # Все элементы ведущей строки делим на ведущий элемент
         pivot = self.table[row][column]
         for x in self.table[row]:
             self.table[row][j] = self.table[row][j] / pivot
             j += 1
+        # В остальных строках:
+        # элемент = элемент - коэффициент строки в ведущем столбце * новая ведущая строка в столбце элемента
         i = 0
         for xi in self.table:
             if i != row:
@@ -138,6 +152,7 @@ class SimplexMethod:
                     j += 1
             i += 1
 
+    # Вывод результата
     def print_result(self):
         if self.mode == "max":
             for j in range(len(self.table[-2])):
