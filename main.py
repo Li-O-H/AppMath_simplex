@@ -162,6 +162,11 @@ class SimplexMethod:
                 self.table[-2][j] *= -1
         print("Final table:")
         print(numpy.array(self.table))
+        # Выявление отсутствия решений - проверка на допустимость решения
+        for i in range(len(self.basic_vars)):
+            if self.basic_vars[i] + 1 > self.n and abs(self.table[i][0]) > 1e-10:
+                print("No solutions")
+                return
         for i in range(len(self.basic_vars)):
             print(f"x{self.basic_vars[i] + 1} = {round(self.table[i][0], 4)}")
         for i in range(self.n):
