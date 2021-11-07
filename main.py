@@ -31,6 +31,9 @@ class SimplexMethod:
         self.f_coefs = [float(coef) for coef in self.f_coefs]
         self.table = []
         self.basic_vars = [0 for i in range(self.m)]
+        self.additional_vars = []
+        self.additional_vars_rows = []
+        self.unbounded = False
 
     def solve(self):
         self.form_start_table()
@@ -50,17 +53,24 @@ class SimplexMethod:
                     for j in range(self.m):
                         self.constraints_coefs[j].append(0)
                     self.constraints_coefs[i][-1] = -1
+                    for j in range(self.m):
+                        self.constraints_coefs[j].append(0)
+                    self.constraints_coefs[i][-1] = 1
+                    self.additional_vars_rows.append(i)
+                    self.additional_vars.append(len(self.constraints_coefs[i]) - 1)
                 else:
                     for j in range(self.m):
                         self.constraints_coefs[j].append(0)
                     self.constraints_coefs[i][-1] = 1
+                    self.additional_vars_rows.append(i)
+                    self.additional_vars.append(len(self.constraints_coefs[i]) - 1)
         # Формируем строки таблицы, запоминая базисные переменные
         for i in range(self.m):
             for j in range(self.n, len(self.constraints_coefs[i])):
-                if self.constraints_coefs[i][j] != 0:
-                    row = [self.constraints_limits[i] / self.constraints_coefs[i][j]]
+                if self.constraints_coefs[i][j] == 1:
+                    row = [self.constraints_limits[i]]
                     for l in range(len(self.constraints_coefs[i])):
-                        row.append(self.constraints_coefs[i][l] / self.constraints_coefs[i][j])
+                        row.append(self.constraints_coefs[i][l])
                     self.table.append(row)
                     self.basic_vars[i] = j
         self.table.append([0])
@@ -73,23 +83,27 @@ class SimplexMethod:
                 self.table[-1].append(coef)
         while len(self.table[-1]) != len(self.table[0]):
             self.table[-1].append(0)
-        # Дописываем коэффициенты функции с искусственными переменными
+        # Дописываем строку с искусственными переменными
         check_row = [0 for j in range(len(self.table[0]))]
         if self.mode == "min":
             for i in range(len(self.table) - 1):
-                for j in range(len(self.table[0])):
-                    check_row[j] += self.table[i][j]
-                    if j > self.n:
-                        check_row[j] = 0
+                if self.additional_vars_rows.__contains__(i):
+                    for j in range(len(self.table[0])):
+                        check_row[j] += self.table[i][j]
+                        if self.basic_vars.__contains__(j - 1):
+                            check_row[j] = 0
         else:
             for i in range(len(self.table) - 1):
-                for j in range(len(self.table[0])):
-                    check_row[j] -= self.table[i][j]
-                    if j > self.n:
-                        check_row[j] = 0
+                if self.additional_vars_rows.__contains__(i):
+                    for j in range(len(self.table[0])):
+                        check_row[j] -= self.table[i][j]
+                        if self.basic_vars.__contains__(j - 1):
+                            check_row[j] = 0
         self.table.append(check_row)
         print(f"Start table")
         print(numpy.array(self.table))
+        basic_vars = [f"x{i + 1}" for i in self.basic_vars]
+        print(f"Basic variables: {basic_vars}")
         print("___________")
         return self.table
 
@@ -101,16 +115,18 @@ class SimplexMethod:
             pivot_column = 0
             j = 1
             # Поиск ведущего столбца
-            for j in range(1, self.n + 1):
-                if self.table[-1][j] > max:
-                    max = self.table[-1][j]
-                    pivot_column = j
+            for j in range(1, len(self.table[0])):
+                if not self.additional_vars.__contains__(j - 1):
+                    if self.table[-1][j] > max:
+                        max = self.table[-1][j]
+                        pivot_column = j
             # Проверка на оптимальность плана
             if abs(max) < 1e-10:
-                for j in range(1, self.n + 1):
-                    if self.table[-2][j] > max:
-                        max = self.table[-2][j]
-                        pivot_column = j
+                for j in range(1, len(self.table[0])):
+                    if not self.additional_vars.__contains__(j - 1):
+                        if self.table[-2][j] > max:
+                            max = self.table[-2][j]
+                            pivot_column = j
                 if abs(max) < 1e-10:
                     return self.table
             # Поиск ведущей строки
@@ -126,12 +142,14 @@ class SimplexMethod:
                 i += 1
             # Проверка на неограниченность
             if min_theta == math.inf:
-                print("Unbounded")
+                self.unbounded = True
                 return
             self.pivot(pivot_row, pivot_column)
             self.basic_vars[pivot_row] = pivot_column - 1
             print(f"Iteration: {iteration}")
             print(numpy.array(self.table))
+            basic_vars = [f"x{i + 1}" for i in self.basic_vars]
+            print(f"Basic variables: {basic_vars}")
             iteration += 1
 
     # Преобразование таблицы при переходе к следующему плану
@@ -157,23 +175,35 @@ class SimplexMethod:
 
     # Вывод результата
     def print_result(self):
+        print("___________")
         if self.mode == "max":
             for j in range(len(self.table[-2])):
                 self.table[-2][j] *= -1
         print("Final table:")
         print(numpy.array(self.table))
+        basic_vars = [f"x{i + 1}" for i in self.basic_vars]
+        print(f"Basic variables: {basic_vars}")
         # Выявление отсутствия решений - проверка на допустимость решения
         for i in range(len(self.basic_vars)):
-            if self.basic_vars[i] + 1 > self.n and abs(self.table[i][0]) > 1e-10:
+            if self.additional_vars.__contains__(self.basic_vars[i]) and abs(self.table[i][0]) > 1e-10:
                 print("No solutions")
                 return
+        if self.unbounded:
+            print("Unbounded")
+            return
+        # Выявление не единственного решения
         for i in range(len(self.basic_vars)):
-            print(f"x{self.basic_vars[i] + 1} = {round(self.table[i][0], 4)}")
+            if self.basic_vars[i] + 1 > self.n and abs(self.table[i][0]) > 1e-10:
+                print("Not only solution")
+                break
+        for i in range(len(self.basic_vars)):
+            if self.basic_vars[i] < self.n:
+                print(f"x{self.basic_vars[i] + 1} = {round(self.table[i][0], 4)}")
         for i in range(self.n):
             if not self.basic_vars.__contains__(i):
                 print(f"x{i + 1} = 0")
         print(f"Function extremum: {round(self.table[-2][0], 4)}")
 
 
-s = SimplexMethod('1 task.txt')
+s = SimplexMethod('Many solutions.txt')
 s.solve()
