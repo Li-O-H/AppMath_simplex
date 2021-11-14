@@ -205,5 +205,5 @@ class SimplexMethod:
         print(f"Function extremum: {round(self.table[-2][0], 4)}")
 
 
-s = SimplexMethod('Many solutions.txt')
+s = SimplexMethod("lab2_tasks/lab2_9'.txt")
 s.solve()
